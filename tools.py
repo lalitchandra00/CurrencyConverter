@@ -1,7 +1,10 @@
 ﻿from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
+from langchain_core.tools import InjectedToolArg  # It tells the agent "do not ask the LLM to fill this argument". 
+from typing import Annotated # Annotated = Like putting a sticky note on a variable's type. The type stays the same (e.g., float), but      you're adding extra info for the code/tools to read. 
 import requests 
+import json
 from dotenv import load_dotenv
 import os
 
@@ -36,7 +39,7 @@ def get_conversion_factor(base_curr: str,   target_curr : str) -> float:
 
 
 @tool
-def convert(base_curr_value:float, conversion_factor:float )-> float:
+def convert(base_curr_value:float, conversion_factor: Annotated[float, InjectedToolArg])-> float:
     """given a currency conversion rate this function calculates the target currency value from a given base currency value"""
 
     return (base_curr_value * conversion_factor)
@@ -53,8 +56,23 @@ human_message = "What is the conversion factor between USD and INR and can you c
  # two things here,  2 question asked how to print the conversion factor and send it to  the second question  i.e lm will call get_conversion_factor this function first and then print its value  and send it to the another function that is covert.
 
 
-message = [HumanMessage(human_message)]
+messages = [HumanMessage(human_message)]
 
-ai_message = llm_with_tools.invoke(message)
-message.append(ai_message)
-print(message)
+ai_message = llm_with_tools.invoke(messages)
+messages.append(ai_message)
+print(messages)
+
+for tool in  ai_message.tool_calls:
+    if tool['name'] == 'get_conversion_factor':
+        tool1_message = get_conversion_factor.invoke(tool)
+        print(tool1_message)
+        messages.append(tool1_message)
+        conversion_factor = json.loads(tool1_message.content)['conversion_factor']   
+
+    if tool['name'] == 'convert':
+        tool['args']['conversion_rate'] = conversion_factor
+        tool2_message = convert.invoke(tool)
+        messages.append(tool2_message)
+
+final_result = llm_with_tools.invoke(messages).content
+print(final_result)
