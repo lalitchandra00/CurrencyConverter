@@ -8,6 +8,9 @@ import os
 
 load_dotenv()
 
+
+Ex_ChangeRate_API=os.getenv("EX_CHANGERATE_API")
+
 # Create the Gemini chat model.
 llm = ChatGoogleGenerativeAI(
 	model="gemini-3.8-flash",
@@ -21,7 +24,7 @@ llm = ChatGoogleGenerativeAI(
 @tool
 def get_conversion_factor(base_curr: str,   target_curr : str) -> float:
     """This function fetches the currency conversion factor between a base currency and target currency"""
-    url = f"https://v6.exchangerate-api.com/v6/589f28bd305564c28b3807d6/pair/{base_curr}/{target_curr}"
+    url = f"https://v6.exchangerate-api.com/v6/{Ex_ChangeRate_API}/pair/{base_curr}/{target_curr}"
     response = requests.get(url)
 
     return response.json()
@@ -46,8 +49,12 @@ def convert(base_curr_value:float, conversion_factor:float )-> float:
 llm_with_tools = llm.bind_tools([get_conversion_factor, convert])
 
 # Making message and sendinf=g it to the llm.
-human_message = input("Enter query : ")
-message = HumanMessage(human_message)
+human_message = "What is the conversion factor between USD and INR and can you convert 10 usd to inr "
+ # two things here,  2 question asked how to print the conversion factor and send it to  the second question  i.e lm will call get_conversion_factor this function first and then print its value  and send it to the another function that is covert.
+
+
+message = [HumanMessage(human_message)]
 
 ai_message = llm_with_tools.invoke(message)
 message.append(ai_message)
+print(message)
