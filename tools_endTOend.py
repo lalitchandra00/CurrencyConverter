@@ -62,6 +62,8 @@ ai_message = llm_with_tools.invoke(messages)
 messages.append(ai_message)
 print(messages)
 
+
+# Confusing part
 for tool in  ai_message.tool_calls:
     if tool['name'] == 'get_conversion_factor':
         tool1_message = get_conversion_factor.invoke(tool)
